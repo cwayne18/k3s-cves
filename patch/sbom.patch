@@ -1,0 +1,50 @@
+diff --git a/pkg/sbom/io/encode.go b/pkg/sbom/io/encode.go
+index a26cd2f..6783387 100644
+--- a/pkg/sbom/io/encode.go
++++ b/pkg/sbom/io/encode.go
+@@ -137,6 +137,16 @@ func (e *Encoder) rootComponent(r types.Report) (*core.Component, error) {
+ 		// e.g. for use in `convert` mode.
+ 		// See https://github.com/aquasecurity/trivy/issues/6780
+ 		root.Type = core.TypeFilesystem
++
++		if r.BOM != nil {
++			for _, c := range r.BOM.Components() {
++				if c.Root && c.PkgIdentifier.PURL != nil {
++					root.Type = c.Type
++					root.PkgIdentifier.PURL = c.PkgIdentifier.PURL
++					break
++				}
++			}
++		}
+ 	}
+ 
+ 	if r.Metadata.Size != 0 {
+@@ -266,7 +276,7 @@ func (e *Encoder) encodePackages(parent *core.Component, result types.Result) {
+ 		c := components[pkg.Identifier.UID]
+ 
+ 		// Add a relationship between the parent and the package if needed
+-		if e.belongToParent(pkg, parents, hasRoot) {
++		if e.belongToParent(pkg, parents, hasRoot, result.Class) {
+ 			e.bom.AddRelationship(parent, c, core.RelationshipContains)
+ 		}
+ 
+@@ -500,7 +510,7 @@ func (*Encoder) vulnerability(vuln types.DetectedVulnerability) core.Vulnerabili
+ }
+ 
+ // belongToParent determines if a package should be directly included in the parent based on its relationship and dependencies.
+-func (*Encoder) belongToParent(pkg ftypes.Package, parents map[string]ftypes.Packages, hasRoot bool) bool {
++func (*Encoder) belongToParent(pkg ftypes.Package, parents map[string]ftypes.Packages, hasRoot bool, pkgClass types.ResultClass) bool {
+ 	// Case 1: Relationship: known , DependsOn: known
+ 	//         Packages with no parent are included in the parent
+ 	//         - Relationship:
+@@ -521,6 +531,10 @@ func (*Encoder) belongToParent(pkg ftypes.Package, parents map[string]ftypes.Pac
+ 		return !hasRoot
+ 	}
+ 
++	if pkgClass == types.ClassOSPkg {
++		return true
++	}
++
+ 	return len(parents[pkg.ID]) == 0
+ }
+ 

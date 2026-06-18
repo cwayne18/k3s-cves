@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+
+# Generated scan artifacts (intermediate, not committed)
+/images.txt
+/trivy_scan_report.txt
+/vex.openvex.json

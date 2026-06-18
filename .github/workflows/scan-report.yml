@@ -1,0 +1,189 @@
+name: Trivy Scan Report
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "k3s branch to scan (e.g. main, release-1.33). Mutually exclusive with release_version / pr_number."
+        required: false
+        type: string
+        default: ''
+      release_version:
+        description: 'k3s release version to scan (e.g. v1.36.1+k3s1). Mutually exclusive with branch / pr_number.'
+        required: false
+        type: string
+        default: ''
+      pr_number:
+        description: 'PR number or URL to scan (e.g. 9994 or https://github.com/k3s-io/k3s/pull/9994). Mutually exclusive with branch / release_version.'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+  models: read
+
+concurrency:
+  group: reports-commit
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.8'
+
+      - name: Patch Trivy and build from source
+        run: |
+          TMP_TRIVY_DIR="tmp-trivy"
+          mkdir "${TMP_TRIVY_DIR}"
+          cd "${TMP_TRIVY_DIR}"
+          # Clone Trivy at commit of immutable release v0.70.0 - https://github.com/aquasecurity/trivy/releases/tag/v0.70.0
+          git clone --revision 8a3177aedf7ee0864920eb1852eef031cd3742b8 --depth 1 https://github.com/aquasecurity/trivy.git
+          cd trivy
+          # Patch fixes incorrect SBOM relationships for OS packages, which is required
+          # to correctly apply VEX statements to RPMs (matches rancher/image-scanning).
+          git apply ../../patch/sbom.patch
+          GOEXPERIMENT=jsonv2 go build ./cmd/trivy/
+          sudo install trivy /usr/local/bin
+          cd ../..
+          rm -rf "${TMP_TRIVY_DIR}"
+          trivy --version
+
+      - name: Build scan.sh arguments
+        id: scan_args
+        run: |
+          ARGS="main"
+          MODE="scheduled"
+          if [ -n "${{ inputs.release_version }}" ]; then
+            ARGS="--release ${{ inputs.release_version }}"
+            MODE="release"
+          elif [ -n "${{ inputs.pr_number }}" ]; then
+            ARGS="--pr ${{ inputs.pr_number }}"
+            MODE="pr"
+          elif [ -n "${{ inputs.branch }}" ]; then
+            ARGS="${{ inputs.branch }}"
+            MODE="branch"
+          fi
+          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+      - name: Run scan.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRIVY_DISABLE_VEX_NOTICE: "true"
+        run: bash scan.sh ${{ steps.scan_args.outputs.args }}
+
+      - name: Determine output filename
+        id: filename
+        run: |
+          MODE="${{ steps.scan_args.outputs.mode }}"
+          if [ "$MODE" = "release" ]; then
+            RELEASE="${{ inputs.release_version }}"
+            SAFE_RELEASE=$(echo "$RELEASE" | sed -E 's/\+/\./g; s/[^A-Za-z0-9._-]+/-/g; s/^-+|-+$//g')
+            if [ -z "$SAFE_RELEASE" ]; then
+              SAFE_RELEASE="release"
+            fi
+            BASE="scan-${SAFE_RELEASE}"
+            N=1
+            while [ -f "reports/${BASE}-${N}.md" ]; do
+              N=$((N + 1))
+            done
+            echo "filename=reports/${BASE}-${N}.md" >> "$GITHUB_OUTPUT"
+          elif [ "$MODE" = "pr" ]; then
+            PR="${{ inputs.pr_number }}"
+            # Extract just the number if a full URL was provided
+            PR_NUM=$(echo "$PR" | grep -oE '[0-9]+$')
+            echo "filename=reports/pr-${PR_NUM}.md" >> "$GITHUB_OUTPUT"
+          elif [ "$MODE" = "branch" ]; then
+            BRANCH="${{ inputs.branch }}"
+            SAFE_BRANCH=$(echo "$BRANCH" | sed -E 's/[^A-Za-z0-9._-]+/-/g; s/^-+|-+$//g')
+            BASE="scan-${SAFE_BRANCH}"
+            N=1
+            while [ -f "reports/${BASE}-${N}.md" ]; do
+              N=$((N + 1))
+            done
+            echo "filename=reports/${BASE}-${N}.md" >> "$GITHUB_OUTPUT"
+          else
+            DATE=$(date +%Y%m%d)
+            N=1
+            while [ -f "reports/scan-${DATE}-${N}.md" ]; do
+              N=$((N + 1))
+            done
+            echo "filename=reports/scan-${DATE}-${N}.md" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Move report to reports directory
+        run: mv trivy_scan_report.txt "${{ steps.filename.outputs.filename }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Convert Markdown report to HTML
+        id: convert
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_MODEL: openai/gpt-4.1-mini
+        run: |
+          INPUT="${{ steps.filename.outputs.filename }}"
+          BASENAME=$(basename "${INPUT%.md}")
+          mkdir -p reports/html
+          OUTPUT="reports/html/${BASENAME}.html"
+          python3 .github/scripts/scan_to_html.py "$INPUT" "$OUTPUT"
+          python3 .github/scripts/scan_to_html.py --index reports/html
+          echo "html_file=$OUTPUT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload HTML report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-report-${{ github.run_number }}
+          path: ${{ steps.convert.outputs.html_file }}
+          if-no-files-found: error
+
+      - name: Commit and push report + HTML
+        run: |
+          MARKDOWN="${{ steps.filename.outputs.filename }}"
+          HTML="${{ steps.convert.outputs.html_file }}"
+          BRANCH="${{ github.ref_name }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          for attempt in 1 2 3; do
+            # Regenerate HTML/index from the current tree (post-rebase on retries)
+            python3 .github/scripts/scan_to_html.py "$MARKDOWN" "$HTML"
+            python3 .github/scripts/scan_to_html.py --index reports/html
+
+            git add "$MARKDOWN" "$HTML" reports/html/index.html
+            if [ -f reports/scan_metrics.db ]; then
+              git add reports/scan_metrics.db
+            fi
+            if git diff --cached --quiet; then
+              echo "No changes to commit"
+              exit 0
+            fi
+
+            git commit -m "chore: add scan report and HTML for $MARKDOWN"
+
+            git fetch origin "$BRANCH"
+            if git push origin HEAD:"$BRANCH"; then
+              exit 0
+            fi
+
+            echo "Push failed (attempt $attempt/3), retrying..."
+            git reset --soft HEAD~1
+            git pull --rebase origin "$BRANCH"
+          done
+
+          echo "Failed to push report and HTML after 3 attempts"
+          exit 1
