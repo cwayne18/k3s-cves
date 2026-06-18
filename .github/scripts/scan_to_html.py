@@ -672,6 +672,125 @@ code {
 }
 """
 
+# Dark-mode overrides + theme-toggle button styling. Kept as a separate
+# constant so it can also be injected into pre-rendered sample reports.
+_DARK_CSS = """
+/* ---- Dark mode ---- */
+:root[data-theme="dark"] {
+  --body-bg:          #16171C;
+  --body-text:        #E6E6EC;
+  --muted:            #9B9BA6;
+  --border:           #2D2F39;
+  --box-bg:           #1E1F26;
+  --header-bg:        #1A1B21;
+  --header-border:    #2D2F39;
+  --link:             #5B9BFF;
+  --code-bg:          #22232B;
+  --table-header-bg:  #22232B;
+  --table-hover-bg:   #24262F;
+
+  /* Severity */
+  --sev-low-bg:          #1E2A40;
+  --sev-low-text:        #8FB6FF;
+  --sev-low-border:      #2673A6;
+  --sev-unknown-bg:      #2A2C35;
+  --sev-unknown-text:    #9B9BA6;
+  --sev-unknown-border:  #3A3C46;
+}
+
+:root[data-theme="dark"] .page-header {
+  box-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+:root[data-theme="dark"] .cve-trend-tooltip {
+  background: #000000;
+  color: #E6E6EC;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+
+/* Themed banner boxes that use hard-coded light fills */
+:root[data-theme="dark"] .all-clean-banner {
+  background: #15291E;
+  color: #5FCF8C;
+}
+:root[data-theme="dark"] .optional-section {
+  background: #241F14;
+}
+:root[data-theme="dark"] .optional-toggle-label {
+  color: #E0B84D;
+}
+:root[data-theme="dark"] .optional-switch {
+  background: #3A3C46;
+}
+:root[data-theme="dark"] .suggested-actions {
+  background: #161B26;
+}
+:root[data-theme="dark"] .vex-candidates {
+  background: #14241B;
+}
+:root[data-theme="dark"] .vex-status {
+  background: #1B3A28;
+  color: #7FD8A0;
+  border-color: #2E5C40;
+}
+
+/* ---- Theme toggle ---- */
+.theme-toggle {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  background: var(--box-bg);
+  color: var(--body-text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: background .15s ease, border-color .15s ease;
+}
+.theme-toggle:hover {
+  border-color: var(--link);
+}
+.theme-toggle .theme-icon-dark { display: none; }
+:root[data-theme="dark"] .theme-toggle .theme-icon-light { display: none; }
+:root[data-theme="dark"] .theme-toggle .theme-icon-dark { display: inline; }
+"""
+
+CSS += _DARK_CSS
+
+# Applies the persisted (or system-preferred) theme before first paint to
+# avoid a flash of the wrong theme. Placed in <head>.
+_THEME_HEAD_SCRIPT = """<script>
+(function () {
+  try {
+    var stored = localStorage.getItem('theme');
+    var prefersDark = window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (stored === 'dark' || (!stored && prefersDark)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  } catch (e) {}
+})();
+</script>"""
+
+# Dark-mode toggle button rendered in the page header.
+_THEME_TOGGLE_HTML = (
+    '<button type="button" class="theme-toggle" aria-label="Toggle dark mode" '
+    'title="Toggle dark mode" '
+    'onclick="(function(){var d=document.documentElement;'
+    "var dark=d.getAttribute('data-theme')==='dark';"
+    "if(dark){d.removeAttribute('data-theme');}"
+    "else{d.setAttribute('data-theme','dark');}"
+    "try{localStorage.setItem('theme',dark?'light':'dark');}catch(e){}"
+    '})()">'
+    '<span class="theme-icon-light" aria-hidden="true">&#127769;</span>'
+    '<span class="theme-icon-dark" aria-hidden="true">&#9728;</span>'
+    '</button>'
+)
+
 # ---------------------------------------------------------------------------
 # ASCII table parser
 # ---------------------------------------------------------------------------
@@ -2474,6 +2593,7 @@ def build_html(title, body_html, source_filename, subtitle="— Report"):
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{esc(title)}</title>
   <style>{CSS}</style>
+  {_THEME_HEAD_SCRIPT}
 </head>
 <body>
   <header class="page-header">
@@ -2482,6 +2602,7 @@ def build_html(title, body_html, source_filename, subtitle="— Report"):
       K3s CVEs
     </div>
     <span class="subtitle">{esc(subtitle)}</span>
+    {_THEME_TOGGLE_HTML}
   </header>
   <main class="page-content">
     {body_html}
@@ -3645,6 +3766,7 @@ def generate_index(html_dir):
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>K3s CVEs — Reports</title>
   <style>{CSS}{_INDEX_CSS_EXTRA}</style>
+  {_THEME_HEAD_SCRIPT}
 </head>
 <body>
   <header class="page-header">
@@ -3653,6 +3775,7 @@ def generate_index(html_dir):
       K3s CVEs
     </div>
     <span class="subtitle">— Reports</span>
+    {_THEME_TOGGLE_HTML}
   </header>
   <main class="page-content">
     {body_html}
