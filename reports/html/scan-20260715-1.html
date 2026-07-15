@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trivy Scan Report</title>
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Lato:ital,wght@0,400;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap');
+
+:root {
+  --body-bg:          #FFFFFF;
+  --body-text:        #1B1F2A;
+  --muted:            #5C6470;
+  --border:           #E0E3E8;
+  --box-bg:           #F6F7F9;
+  --header-bg:        #1B1F2A;
+  --header-border:    #FFC61C;
+  --link:             #06527A;
+  --code-bg:          #F6F7F9;
+  --table-header-bg:  #F6F7F9;
+  --table-hover-bg:   #FFF8E6;
+
+  /* k3s brand */
+  --brand-gold:        #FFC61C;
+  --brand-gold-dark:   #FFBA00;
+  --brand-navy:        #1B1F2A;
+
+  /* Severity */
+  --sev-critical-bg:     #B13333;
+  --sev-critical-text:   #FFFFFF;
+  --sev-critical-border: #7C0015;
+  --sev-high-bg:         #E45C1E;
+  --sev-high-text:       #FFFFFF;
+  --sev-high-border:     #B03A0A;
+  --sev-medium-bg:       #FFE47A;
+  --sev-medium-text:     #473900;
+  --sev-medium-border:   #E5A200;
+  --sev-low-bg:          #E6F2F8;
+  --sev-low-text:        #06527A;
+  --sev-low-border:      #086B9F;
+  --sev-unknown-bg:      #EDEFF3;
+  --sev-unknown-text:    #5C6470;
+  --sev-unknown-border:  #E0E3E8;
+
+  /* Status badges */
+  --status-needs-bg:     #E45C1E;
+  --status-needs-text:   #FFFFFF;
+  --status-needs-border: #B03A0A;
+  --status-ok-bg:        #27AE60;
+  --status-ok-text:      #FFFFFF;
+  --status-ok-border:    #1A7A41;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--body-bg);
+  color: var(--body-text);
+  font-family: 'Lato', arial, helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ---- Header ---- */
+.page-header {
+  background: var(--header-bg);
+  border-bottom: 3px solid var(--header-border);
+  padding: 0 32px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
+}
+.page-header .brand {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.page-header .brand svg { width: 28px; height: 28px; flex-shrink: 0; }
+.page-header .subtitle {
+  font-size: 13px;
+  color: var(--brand-gold);
+  margin-left: 4px;
+}
+
+/* ---- Layout ---- */
+.page-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+/* ---- Headings ---- */
+h1, h2, h3, h4 {
+  font-family: 'Poppins', sans-serif;
+  color: var(--body-text);
+  margin-top: 0;
+}
+h1 {
+  font-size: 24px; font-weight: 600;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+h2 {
+  font-size: 17px; font-weight: 600;
+  margin-top: 36px; margin-bottom: 10px;
+}
+.anchored-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.heading-anchor {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.anchored-heading:hover .heading-anchor,
+.anchored-heading:focus-within .heading-anchor {
+  opacity: 1;
+}
+.heading-anchor:hover {
+  color: var(--link);
+}
+h2 code {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-weight: 400;
+}
+h3 {
+  font-size: 15px; font-weight: 600;
+  margin-top: 24px; margin-bottom: 8px;
+}
+
+/* ---- Images list ---- */
+ul.images-list {
+  list-style: none;
+  padding: 0; margin: 0 0 24px;
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+ul.images-list li code {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  display: inline-block;
+}
+
+/* Generic list */
+ul.generic-list { margin: 8px 0 16px; padding-left: 20px; }
+ul.generic-list li { margin-bottom: 3px; }
+ul.generic-list li code {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* ---- Scan result card ---- */
+.scan-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+/* ---- Tables ---- */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--body-bg);
+}
+.report-table thead tr { background: var(--table-header-bg); }
+.report-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.report-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  word-break: break-word;
+}
+.report-table tbody tr:last-child td { border-bottom: none; }
+.report-table tbody tr:hover { background: var(--table-hover-bg); }
+.report-table a {
+  color: var(--link);
+  text-decoration: none;
+}
+.report-table a:hover { text-decoration: underline; }
+.report-table a.image-scan-link { display: inline-block; }
+.report-table a.image-scan-link code {
+  color: var(--link);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.report-table a.image-scan-link:hover code {
+  border-color: var(--link);
+  text-decoration: underline;
+}
+.report-table .num { text-align: center; font-variant-numeric: tabular-nums; }
+.table-wrap { margin: 8px 0 14px; }
+.table-collapsible {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--body-bg);
+  overflow: hidden;
+}
+.table-collapsible summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--table-header-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+}
+.table-collapsible summary::-webkit-details-marker { display: none; }
+.table-collapsible .toggle-label::before {
+  content: "▾";
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform .15s ease;
+}
+.table-collapsible:not([open]) .toggle-label::before {
+  transform: rotate(-90deg);
+}
+
+/* scan target box used as the collapsible header */
+.scan-collapsible summary.scan-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0;
+  background: var(--box-bg);
+  border-bottom: none;
+}
+.scan-collapsible[open] summary.scan-summary {
+  border-bottom: 1px solid var(--border);
+}
+.scan-collapsible summary.scan-summary .toggle-label {
+  padding: 14px 0 0 14px;
+  color: var(--muted);
+}
+.scan-collapsible summary.scan-summary .toggle-label::before {
+  margin-right: 0;
+}
+.scan-collapsible summary.scan-summary pre.raw-output {
+  flex: 1;
+  padding-left: 6px;
+}
+
+/* vuln count colouring */
+.vuln-count { font-weight: 700; }
+.vuln-count.has-vulns { color: #B13333; }
+
+/* ---- Severity badges ---- */
+.sev {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  border-width: 1px;
+  border-style: solid;
+}
+.sev-CRITICAL { background: var(--sev-critical-bg); color: var(--sev-critical-text); border-color: var(--sev-critical-border); }
+.sev-HIGH     { background: var(--sev-high-bg);     color: var(--sev-high-text);     border-color: var(--sev-high-border);     }
+.sev-MEDIUM   { background: var(--sev-medium-bg);   color: var(--sev-medium-text);   border-color: var(--sev-medium-border);   }
+.sev-LOW      { background: var(--sev-low-bg);      color: var(--sev-low-text);      border-color: var(--sev-low-border);      }
+.sev-UNKNOWN  { background: var(--sev-unknown-bg);  color: var(--sev-unknown-text);  border-color: var(--sev-unknown-border);  }
+
+/* ---- Status badges (check-images) ---- */
+.status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  border-width: 1px;
+  border-style: solid;
+}
+.status-NEEDS_UPDATE { background: var(--status-needs-bg); color: var(--status-needs-text); border-color: var(--status-needs-border); }
+.status-UP_TO_DATE   { background: var(--status-ok-bg);    color: var(--status-ok-text);    border-color: var(--status-ok-border);    }
+.status-UNKNOWN      { background: var(--sev-unknown-bg);  color: var(--sev-unknown-text);  border-color: var(--sev-unknown-border);  }
+
+/* ---- All-clean banner ---- */
+.all-clean-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #EAF7EF;
+  border: 1px solid var(--status-ok-border);
+  border-radius: 6px;
+  color: #1A7A41;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.all-clean-banner .all-clean-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ---- Optional (non-default) add-on images section ---- */
+.optional-section {
+  margin-top: 36px;
+  border: 1px solid var(--border);
+  border-left: 4px solid #B8860B;
+  border-radius: 8px;
+  background: #FBF8EF;
+  padding: 18px 20px 8px;
+}
+/* The toggle checkbox is visually hidden; the styled label/switch drives it. */
+.optional-toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.optional-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.optional-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  color: #7A5C00;
+  user-select: none;
+  width: fit-content;
+}
+.optional-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: #C9CBD6;
+  transition: background .15s ease;
+}
+.optional-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  transition: transform .15s ease;
+}
+.optional-toggle-input:checked ~ .optional-banner .optional-switch {
+  background: #1A7A41;
+}
+.optional-toggle-input:checked ~ .optional-banner .optional-switch::after {
+  transform: translateX(18px);
+}
+.optional-toggle-input:focus-visible ~ .optional-banner .optional-switch {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+.optional-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.optional-body {
+  border-top: 1px dashed var(--border);
+  padding-top: 4px;
+}
+.optional-toggle-input:not(:checked) ~ .optional-body {
+  display: none;
+}
+
+/* ---- Blockquote / callout ---- */
+blockquote.callout {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--link);
+  background: var(--box-bg);
+  border-radius: 0 6px 6px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ---- Pre / fallback ---- */
+pre.raw-output {
+  background: var(--box-bg);
+  margin: 0;
+  padding: 14px 16px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
+}
+
+/* ---- Code inline ---- */
+code {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* ---- Footer ---- */
+.page-footer {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+.page-footer code {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11px;
+}
+
+/* ---- Legend ---- */
+.legend {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 8px 14px;
+  background: var(--box-bg);
+  border-top: 1px solid var(--border);
+}
+
+/* ---- Suggested actions ---- */
+.suggested-actions {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #F8FAFF;
+  padding: 18px 20px 8px;
+  margin-bottom: 22px;
+}
+.suggested-actions h2 {
+  margin: 0 0 10px;
+}
+.suggested-actions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.suggested-actions li {
+  margin-bottom: 8px;
+}
+
+/* ---- VEX candidates ---- */
+.vex-candidates {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #F5FFF8;
+  padding: 18px 20px 12px;
+  margin-bottom: 22px;
+}
+.vex-candidates h2 {
+  margin: 0 0 4px;
+}
+.vex-candidates .vex-intro {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.vex-candidates .vex-intro a {
+  color: var(--link);
+}
+.vex-candidates table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.vex-candidates th {
+  background: var(--table-header-bg);
+  text-align: left;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+}
+.vex-candidates td {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  vertical-align: top;
+}
+.vex-candidates tr:nth-child(even) td {
+  background: var(--box-bg);
+}
+.vex-status {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #D4EDDA;
+  color: #155724;
+  border: 1px solid #C3E6CB;
+}
+
+/* ---- CVE trend line chart ---- */
+.cve-trend {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--body-bg);
+  padding: 18px 20px 14px;
+  margin: 8px 0 22px;
+}
+.cve-trend h3 {
+  margin: 0 0 4px;
+}
+.cve-trend .chart-subtitle {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cve-trend-figure {
+  position: relative;
+}
+.cve-trend-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+  font-family: 'Lato', sans-serif;
+}
+.cve-trend-svg .grid-line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.cve-trend-svg .axis-line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.cve-trend-svg .axis-label {
+  fill: var(--muted);
+  font-size: 10px;
+}
+.cve-trend-svg .series-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cve-trend-svg .series-point {
+  cursor: pointer;
+  transition: r .1s ease;
+}
+.cve-trend-svg .series-point:hover {
+  r: 6;
+}
+.cve-trend-svg .series-hidden {
+  display: none;
+}
+.cve-trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+.cve-trend-legend .legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--body-text);
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.cve-trend-legend .legend-item.legend-off {
+  color: var(--muted);
+  opacity: .55;
+}
+.cve-trend-legend .legend-swatch {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.cve-trend-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--body-text);
+  color: #FFFFFF;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 6px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transform: translate(-50%, -115%);
+  opacity: 0;
+  transition: opacity .1s ease;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
+.cve-trend-tooltip.visible {
+  opacity: 1;
+}
+.cve-trend-tooltip .tt-date {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.cve-trend-empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 12px 0;
+}
+
+/* ---- Dark mode ---- */
+:root[data-theme="dark"] {
+  --body-bg:          #16171C;
+  --body-text:        #E6E6EC;
+  --muted:            #9B9BA6;
+  --border:           #2D2F39;
+  --box-bg:           #1E1F26;
+  --header-bg:        #1A1B21;
+  --header-border:    #2D2F39;
+  --link:             #5B9BFF;
+  --code-bg:          #22232B;
+  --table-header-bg:  #22232B;
+  --table-hover-bg:   #24262F;
+
+  /* Severity */
+  --sev-low-bg:          #1E2A40;
+  --sev-low-text:        #8FB6FF;
+  --sev-low-border:      #2673A6;
+  --sev-unknown-bg:      #2A2C35;
+  --sev-unknown-text:    #9B9BA6;
+  --sev-unknown-border:  #3A3C46;
+}
+
+:root[data-theme="dark"] .page-header {
+  box-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+:root[data-theme="dark"] .cve-trend-tooltip {
+  background: #000000;
+  color: #E6E6EC;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+
+/* Themed banner boxes that use hard-coded light fills */
+:root[data-theme="dark"] .all-clean-banner {
+  background: #15291E;
+  color: #5FCF8C;
+}
+:root[data-theme="dark"] .optional-section {
+  background: #241F14;
+}
+:root[data-theme="dark"] .optional-toggle-label {
+  color: #E0B84D;
+}
+:root[data-theme="dark"] .optional-switch {
+  background: #3A3C46;
+}
+:root[data-theme="dark"] .suggested-actions {
+  background: #161B26;
+}
+:root[data-theme="dark"] .vex-candidates {
+  background: #14241B;
+}
+:root[data-theme="dark"] .vex-status {
+  background: #1B3A28;
+  color: #7FD8A0;
+  border-color: #2E5C40;
+}
+
+/* ---- Theme toggle ---- */
+.theme-toggle {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  background: var(--box-bg);
+  color: var(--body-text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: background .15s ease, border-color .15s ease;
+}
+.theme-toggle:hover {
+  border-color: var(--link);
+}
+.theme-toggle .theme-icon-dark { display: none; }
+:root[data-theme="dark"] .theme-toggle .theme-icon-light { display: none; }
+:root[data-theme="dark"] .theme-toggle .theme-icon-dark { display: inline; }
+</style>
+  <script>
+(function () {
+  try {
+    var stored = localStorage.getItem('theme');
+    var prefersDark = window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (stored === 'dark' || (!stored && prefersDark)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+  <header class="page-header">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="30" height="30" rx="7" fill="#FFC61C"/><text x="16" y="21" font-family="Poppins, sans-serif" font-size="13" font-weight="700" fill="#1B1F2A" text-anchor="middle">k3s</text></svg>
+      K3s CVEs
+    </div>
+    <span class="subtitle">— Trivy Scan Report</span>
+    <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode" onclick="(function(){var d=document.documentElement;var dark=d.getAttribute('data-theme')==='dark';if(dark){d.removeAttribute('data-theme');}else{d.setAttribute('data-theme','dark');}try{localStorage.setItem('theme',dark?'light':'dark');}catch(e){}})()"><span class="theme-icon-light" aria-hidden="true">&#127769;</span><span class="theme-icon-dark" aria-hidden="true">&#9728;</span></button>
+  </header>
+  <main class="page-content">
+    <section class="suggested-actions"><h2>Suggested Actions</h2><ul><li>No actionable CVEs were found in this report.</li></ul></section><h1 id="trivy-scan-report" class="anchored-heading">Trivy Scan Report<a class="heading-anchor" href="#trivy-scan-report" aria-label="Link to section">#</a></h1>
+<h2 id="summary" class="anchored-heading">Summary<a class="heading-anchor" href="#summary" aria-label="Link to section">#</a></h2>
+<h3 id="cves-by-severity" class="anchored-heading">CVEs by Severity<a class="heading-anchor" href="#cves-by-severity" aria-label="Link to section">#</a></h3>
+<div class="scan-card">
+<div class="table-wrap"><details class="table-collapsible" open><summary><span class="toggle-label">Table (3 rows)</span></summary><table class="report-table">
+<thead><tr>
+<th>Severity</th>
+<th>Count</th>
+</tr></thead><tbody>
+<tr>
+<td>CRITICAL</td>
+<td>1</td>
+</tr>
+<tr>
+<td>HIGH</td>
+<td>64</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>65</strong></td>
+</tr>
+</tbody></table></details></div>
+</div>
+<h3 id="images-with-cves-4" class="anchored-heading">Images with CVEs (4)<a class="heading-anchor" href="#images-with-cves-4" aria-label="Link to section">#</a></h3>
+<div class="scan-card">
+<div class="table-wrap"><details class="table-collapsible" open><summary><span class="toggle-label">Table (4 rows)</span></summary><table class="report-table">
+<thead><tr>
+<th>Image</th>
+<th>CRITICAL</th>
+<th>HIGH</th>
+</tr></thead><tbody>
+<tr>
+<td><code style="font-size:11px;word-break:break-all">docker.io/rancher/klipper-helm:v0.11.1-build20260615</code></td>
+<td>0</td>
+<td>8</td>
+</tr>
+<tr>
+<td><code style="font-size:11px;word-break:break-all">docker.io/rancher/local-path-provisioner:v0.0.36</code></td>
+<td>0</td>
+<td>34</td>
+</tr>
+<tr>
+<td><code style="font-size:11px;word-break:break-all">docker.io/rancher/mirrored-coredns-coredns:1.14.4</code></td>
+<td>0</td>
+<td>9</td>
+</tr>
+<tr>
+<td><code style="font-size:11px;word-break:break-all">docker.io/rancher/mirrored-metrics-server:v0.8.1</code></td>
+<td>1</td>
+<td>13</td>
+</tr>
+</tbody></table></details></div>
+</div>
+<h3 id="cve-free-images-5" class="anchored-heading">CVE-free Images (5)<a class="heading-anchor" href="#cve-free-images-5" aria-label="Link to section">#</a></h3>
+<ul class="generic-list">
+<li><code>docker.io/rancher/klipper-lb:v0.4.17</code></li>
+<li><code>docker.io/rancher/mirrored-library-busybox:1.37.0</code></li>
+<li><code>docker.io/rancher/mirrored-library-traefik:3.7.7</code></li>
+<li><code>docker.io/rancher/mirrored-pause:3.10.2</code></li>
+<li><code>K3s Binary (branch &#x27;main&#x27;)</code></li>
+</ul>
+<section class="cve-trend" id="cve-trend"><h3 id="cve-trend-over-time" class="anchored-heading">CVE Trend Over Time<a class="heading-anchor" href="#cve-trend-over-time" aria-label="Link to section">#</a></h3><p class="chart-subtitle">Critical &amp; High CVE counts across the last 28 branch &#x27;main&#x27; scans. Hover a point for details; click a legend entry to toggle a series.</p><div class="cve-trend-figure"><svg class="cve-trend-svg" viewBox="0 0 760 300" role="img" aria-label="CVE counts over recent scans" preserveAspectRatio="xMidYMid meet"><line class="grid-line" x1="48" y1="24.0" x2="740" y2="24.0"></line><text class="axis-label" x="40" y="27.0" text-anchor="end">84</text><line class="grid-line" x1="48" y1="79.0" x2="740" y2="79.0"></line><text class="axis-label" x="40" y="82.0" text-anchor="end">63</text><line class="grid-line" x1="48" y1="134.0" x2="740" y2="134.0"></line><text class="axis-label" x="40" y="137.0" text-anchor="end">42</text><line class="grid-line" x1="48" y1="189.0" x2="740" y2="189.0"></line><text class="axis-label" x="40" y="192.0" text-anchor="end">21</text><line class="grid-line" x1="48" y1="244.0" x2="740" y2="244.0"></line><text class="axis-label" x="40" y="247.0" text-anchor="end">0</text><line class="axis-line" x1="48" y1="244.0" x2="740" y2="244.0"></line><text class="axis-label" x="48.0" y="260.0" text-anchor="middle" transform="rotate(0 48.0 260.0)">2026-06-18</text><text class="axis-label" x="150.5" y="260.0" text-anchor="middle" transform="rotate(0 150.5 260.0)">2026-06-22</text><text class="axis-label" x="253.0" y="260.0" text-anchor="middle" transform="rotate(0 253.0 260.0)">2026-06-26</text><text class="axis-label" x="355.6" y="260.0" text-anchor="middle" transform="rotate(0 355.6 260.0)">2026-06-30</text><text class="axis-label" x="458.1" y="260.0" text-anchor="middle" transform="rotate(0 458.1 260.0)">2026-07-04</text><text class="axis-label" x="560.6" y="260.0" text-anchor="middle" transform="rotate(0 560.6 260.0)">2026-07-08</text><text class="axis-label" x="663.1" y="260.0" text-anchor="middle" transform="rotate(0 663.1 260.0)">2026-07-12</text><text class="axis-label" x="740.0" y="260.0" text-anchor="middle" transform="rotate(0 740.0 260.0)">2026-07-15</text><polyline class="series-line series-total" data-series="total" points="48.0,152.3 73.6,152.3 99.3,152.3 124.9,152.3 150.5,152.3 176.1,24.0 201.8,24.0 227.4,29.2 253.0,155.0 278.7,157.6 304.3,94.7 329.9,94.7 355.6,94.7 381.2,100.0 406.8,84.2 432.4,84.2 458.1,84.2 483.7,113.0 509.3,84.2 535.0,100.0 560.6,100.0 586.2,94.7 611.9,100.0 637.5,71.1 663.1,73.8 688.7,73.8 714.4,73.8 740.0,73.8" stroke="#1F67DB"></polyline><circle class="series-point series-total" data-series="total" cx="48.0" cy="152.3" r="3.5" fill="#1F67DB" data-label="2026-06-18 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="35"></circle><circle class="series-point series-total" data-series="total" cx="73.6" cy="152.3" r="3.5" fill="#1F67DB" data-label="2026-06-19 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="35"></circle><circle class="series-point series-total" data-series="total" cx="99.3" cy="152.3" r="3.5" fill="#1F67DB" data-label="2026-06-20 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="35"></circle><circle class="series-point series-total" data-series="total" cx="124.9" cy="152.3" r="3.5" fill="#1F67DB" data-label="2026-06-21 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="35"></circle><circle class="series-point series-total" data-series="total" cx="150.5" cy="152.3" r="3.5" fill="#1F67DB" data-label="2026-06-22 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="35"></circle><circle class="series-point series-total" data-series="total" cx="176.1" cy="24.0" r="3.5" fill="#1F67DB" data-label="2026-06-23 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="84"></circle><circle class="series-point series-total" data-series="total" cx="201.8" cy="24.0" r="3.5" fill="#1F67DB" data-label="2026-06-24 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="84"></circle><circle class="series-point series-total" data-series="total" cx="227.4" cy="29.2" r="3.5" fill="#1F67DB" data-label="2026-06-25 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="82"></circle><circle class="series-point series-total" data-series="total" cx="253.0" cy="155.0" r="3.5" fill="#1F67DB" data-label="2026-06-26 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="34"></circle><circle class="series-point series-total" data-series="total" cx="278.7" cy="157.6" r="3.5" fill="#1F67DB" data-label="2026-06-27 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="33"></circle><circle class="series-point series-total" data-series="total" cx="304.3" cy="94.7" r="3.5" fill="#1F67DB" data-label="2026-06-28 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="57"></circle><circle class="series-point series-total" data-series="total" cx="329.9" cy="94.7" r="3.5" fill="#1F67DB" data-label="2026-06-29 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="57"></circle><circle class="series-point series-total" data-series="total" cx="355.6" cy="94.7" r="3.5" fill="#1F67DB" data-label="2026-06-30 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="57"></circle><circle class="series-point series-total" data-series="total" cx="381.2" cy="100.0" r="3.5" fill="#1F67DB" data-label="2026-07-01 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="55"></circle><circle class="series-point series-total" data-series="total" cx="406.8" cy="84.2" r="3.5" fill="#1F67DB" data-label="2026-07-02 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="61"></circle><circle class="series-point series-total" data-series="total" cx="432.4" cy="84.2" r="3.5" fill="#1F67DB" data-label="2026-07-03 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="61"></circle><circle class="series-point series-total" data-series="total" cx="458.1" cy="84.2" r="3.5" fill="#1F67DB" data-label="2026-07-04 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="61"></circle><circle class="series-point series-total" data-series="total" cx="483.7" cy="113.0" r="3.5" fill="#1F67DB" data-label="2026-07-05 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="50"></circle><circle class="series-point series-total" data-series="total" cx="509.3" cy="84.2" r="3.5" fill="#1F67DB" data-label="2026-07-06 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="61"></circle><circle class="series-point series-total" data-series="total" cx="535.0" cy="100.0" r="3.5" fill="#1F67DB" data-label="2026-07-07 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="55"></circle><circle class="series-point series-total" data-series="total" cx="560.6" cy="100.0" r="3.5" fill="#1F67DB" data-label="2026-07-08 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="55"></circle><circle class="series-point series-total" data-series="total" cx="586.2" cy="94.7" r="3.5" fill="#1F67DB" data-label="2026-07-09 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="57"></circle><circle class="series-point series-total" data-series="total" cx="611.9" cy="100.0" r="3.5" fill="#1F67DB" data-label="2026-07-10 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="55"></circle><circle class="series-point series-total" data-series="total" cx="637.5" cy="71.1" r="3.5" fill="#1F67DB" data-label="2026-07-11 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="66"></circle><circle class="series-point series-total" data-series="total" cx="663.1" cy="73.8" r="3.5" fill="#1F67DB" data-label="2026-07-12 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="65"></circle><circle class="series-point series-total" data-series="total" cx="688.7" cy="73.8" r="3.5" fill="#1F67DB" data-label="2026-07-13 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="65"></circle><circle class="series-point series-total" data-series="total" cx="714.4" cy="73.8" r="3.5" fill="#1F67DB" data-label="2026-07-14 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="65"></circle><circle class="series-point series-total" data-series="total" cx="740.0" cy="73.8" r="3.5" fill="#1F67DB" data-label="2026-07-15 · branch &#x27;main&#x27;" data-series-name="Total (Critical + High)" data-value="65"></circle><polyline class="series-line series-critical" data-series="critical" points="48.0,241.4 73.6,241.4 99.3,241.4 124.9,241.4 150.5,241.4 176.1,241.4 201.8,241.4 227.4,241.4 253.0,241.4 278.7,241.4 304.3,241.4 329.9,241.4 355.6,241.4 381.2,241.4 406.8,241.4 432.4,241.4 458.1,241.4 483.7,241.4 509.3,241.4 535.0,241.4 560.6,241.4 586.2,241.4 611.9,241.4 637.5,241.4 663.1,241.4 688.7,241.4 714.4,241.4 740.0,241.4" stroke="#B13333"></polyline><circle class="series-point series-critical" data-series="critical" cx="48.0" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-18 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="73.6" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-19 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="99.3" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-20 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="124.9" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-21 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="150.5" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-22 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="176.1" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-23 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="201.8" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-24 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="227.4" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-25 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="253.0" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-26 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="278.7" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-27 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="304.3" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-28 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="329.9" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-29 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="355.6" cy="241.4" r="3.5" fill="#B13333" data-label="2026-06-30 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="381.2" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-01 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="406.8" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-02 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="432.4" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-03 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="458.1" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-04 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="483.7" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-05 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="509.3" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-06 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="535.0" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-07 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="560.6" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-08 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="586.2" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-09 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="611.9" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-10 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="637.5" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-11 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="663.1" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-12 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="688.7" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-13 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="714.4" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-14 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><circle class="series-point series-critical" data-series="critical" cx="740.0" cy="241.4" r="3.5" fill="#B13333" data-label="2026-07-15 · branch &#x27;main&#x27;" data-series-name="Critical" data-value="1"></circle><polyline class="series-line series-high" data-series="high" points="48.0,155.0 73.6,155.0 99.3,155.0 124.9,155.0 150.5,155.0 176.1,26.6 201.8,26.6 227.4,31.9 253.0,157.6 278.7,160.2 304.3,97.3 329.9,97.3 355.6,97.3 381.2,102.6 406.8,86.9 432.4,86.9 458.1,86.9 483.7,115.7 509.3,86.9 535.0,102.6 560.6,102.6 586.2,97.3 611.9,102.6 637.5,73.8 663.1,76.4 688.7,76.4 714.4,76.4 740.0,76.4" stroke="#E45C1E"></polyline><circle class="series-point series-high" data-series="high" cx="48.0" cy="155.0" r="3.5" fill="#E45C1E" data-label="2026-06-18 · branch &#x27;main&#x27;" data-series-name="High" data-value="34"></circle><circle class="series-point series-high" data-series="high" cx="73.6" cy="155.0" r="3.5" fill="#E45C1E" data-label="2026-06-19 · branch &#x27;main&#x27;" data-series-name="High" data-value="34"></circle><circle class="series-point series-high" data-series="high" cx="99.3" cy="155.0" r="3.5" fill="#E45C1E" data-label="2026-06-20 · branch &#x27;main&#x27;" data-series-name="High" data-value="34"></circle><circle class="series-point series-high" data-series="high" cx="124.9" cy="155.0" r="3.5" fill="#E45C1E" data-label="2026-06-21 · branch &#x27;main&#x27;" data-series-name="High" data-value="34"></circle><circle class="series-point series-high" data-series="high" cx="150.5" cy="155.0" r="3.5" fill="#E45C1E" data-label="2026-06-22 · branch &#x27;main&#x27;" data-series-name="High" data-value="34"></circle><circle class="series-point series-high" data-series="high" cx="176.1" cy="26.6" r="3.5" fill="#E45C1E" data-label="2026-06-23 · branch &#x27;main&#x27;" data-series-name="High" data-value="83"></circle><circle class="series-point series-high" data-series="high" cx="201.8" cy="26.6" r="3.5" fill="#E45C1E" data-label="2026-06-24 · branch &#x27;main&#x27;" data-series-name="High" data-value="83"></circle><circle class="series-point series-high" data-series="high" cx="227.4" cy="31.9" r="3.5" fill="#E45C1E" data-label="2026-06-25 · branch &#x27;main&#x27;" data-series-name="High" data-value="81"></circle><circle class="series-point series-high" data-series="high" cx="253.0" cy="157.6" r="3.5" fill="#E45C1E" data-label="2026-06-26 · branch &#x27;main&#x27;" data-series-name="High" data-value="33"></circle><circle class="series-point series-high" data-series="high" cx="278.7" cy="160.2" r="3.5" fill="#E45C1E" data-label="2026-06-27 · branch &#x27;main&#x27;" data-series-name="High" data-value="32"></circle><circle class="series-point series-high" data-series="high" cx="304.3" cy="97.3" r="3.5" fill="#E45C1E" data-label="2026-06-28 · branch &#x27;main&#x27;" data-series-name="High" data-value="56"></circle><circle class="series-point series-high" data-series="high" cx="329.9" cy="97.3" r="3.5" fill="#E45C1E" data-label="2026-06-29 · branch &#x27;main&#x27;" data-series-name="High" data-value="56"></circle><circle class="series-point series-high" data-series="high" cx="355.6" cy="97.3" r="3.5" fill="#E45C1E" data-label="2026-06-30 · branch &#x27;main&#x27;" data-series-name="High" data-value="56"></circle><circle class="series-point series-high" data-series="high" cx="381.2" cy="102.6" r="3.5" fill="#E45C1E" data-label="2026-07-01 · branch &#x27;main&#x27;" data-series-name="High" data-value="54"></circle><circle class="series-point series-high" data-series="high" cx="406.8" cy="86.9" r="3.5" fill="#E45C1E" data-label="2026-07-02 · branch &#x27;main&#x27;" data-series-name="High" data-value="60"></circle><circle class="series-point series-high" data-series="high" cx="432.4" cy="86.9" r="3.5" fill="#E45C1E" data-label="2026-07-03 · branch &#x27;main&#x27;" data-series-name="High" data-value="60"></circle><circle class="series-point series-high" data-series="high" cx="458.1" cy="86.9" r="3.5" fill="#E45C1E" data-label="2026-07-04 · branch &#x27;main&#x27;" data-series-name="High" data-value="60"></circle><circle class="series-point series-high" data-series="high" cx="483.7" cy="115.7" r="3.5" fill="#E45C1E" data-label="2026-07-05 · branch &#x27;main&#x27;" data-series-name="High" data-value="49"></circle><circle class="series-point series-high" data-series="high" cx="509.3" cy="86.9" r="3.5" fill="#E45C1E" data-label="2026-07-06 · branch &#x27;main&#x27;" data-series-name="High" data-value="60"></circle><circle class="series-point series-high" data-series="high" cx="535.0" cy="102.6" r="3.5" fill="#E45C1E" data-label="2026-07-07 · branch &#x27;main&#x27;" data-series-name="High" data-value="54"></circle><circle class="series-point series-high" data-series="high" cx="560.6" cy="102.6" r="3.5" fill="#E45C1E" data-label="2026-07-08 · branch &#x27;main&#x27;" data-series-name="High" data-value="54"></circle><circle class="series-point series-high" data-series="high" cx="586.2" cy="97.3" r="3.5" fill="#E45C1E" data-label="2026-07-09 · branch &#x27;main&#x27;" data-series-name="High" data-value="56"></circle><circle class="series-point series-high" data-series="high" cx="611.9" cy="102.6" r="3.5" fill="#E45C1E" data-label="2026-07-10 · branch &#x27;main&#x27;" data-series-name="High" data-value="54"></circle><circle class="series-point series-high" data-series="high" cx="637.5" cy="73.8" r="3.5" fill="#E45C1E" data-label="2026-07-11 · branch &#x27;main&#x27;" data-series-name="High" data-value="65"></circle><circle class="series-point series-high" data-series="high" cx="663.1" cy="76.4" r="3.5" fill="#E45C1E" data-label="2026-07-12 · branch &#x27;main&#x27;" data-series-name="High" data-value="64"></circle><circle class="series-point series-high" data-series="high" cx="688.7" cy="76.4" r="3.5" fill="#E45C1E" data-label="2026-07-13 · branch &#x27;main&#x27;" data-series-name="High" data-value="64"></circle><circle class="series-point series-high" data-series="high" cx="714.4" cy="76.4" r="3.5" fill="#E45C1E" data-label="2026-07-14 · branch &#x27;main&#x27;" data-series-name="High" data-value="64"></circle><circle class="series-point series-high" data-series="high" cx="740.0" cy="76.4" r="3.5" fill="#E45C1E" data-label="2026-07-15 · branch &#x27;main&#x27;" data-series-name="High" data-value="64"></circle></svg><div class="cve-trend-tooltip" aria-hidden="true"></div></div><div class="cve-trend-legend"><span class="legend-item" data-series="total" role="button" tabindex="0" aria-pressed="true"><span class="legend-swatch" style="background:#1F67DB"></span>Total (Critical + High)</span><span class="legend-item" data-series="critical" role="button" tabindex="0" aria-pressed="true"><span class="legend-swatch" style="background:#B13333"></span>Critical</span><span class="legend-item" data-series="high" role="button" tabindex="0" aria-pressed="true"><span class="legend-swatch" style="background:#E45C1E"></span>High</span></div><script>
+(function () {
+  function initTrend(section) {
+    if (section.dataset.trendReady) return;
+    section.dataset.trendReady = "1";
+    var figure = section.querySelector(".cve-trend-figure");
+    var svg = section.querySelector(".cve-trend-svg");
+    var tip = section.querySelector(".cve-trend-tooltip");
+    if (!figure || !svg || !tip) return;
+
+    section.querySelectorAll(".series-point").forEach(function (pt) {
+      pt.addEventListener("mouseenter", function () {
+        var name = pt.getAttribute("data-series-name") || "";
+        var value = pt.getAttribute("data-value") || "";
+        var label = pt.getAttribute("data-label") || "";
+        tip.innerHTML =
+          '<div class="tt-date">' + label + "</div>" +
+          name + ": " + value;
+        var fr = figure.getBoundingClientRect();
+        var pr = pt.getBoundingClientRect();
+        tip.style.left = (pr.left - fr.left + pr.width / 2) + "px";
+        tip.style.top = (pr.top - fr.top) + "px";
+        tip.classList.add("visible");
+      });
+      pt.addEventListener("mouseleave", function () {
+        tip.classList.remove("visible");
+      });
+    });
+
+    function toggle(item) {
+      var key = item.getAttribute("data-series");
+      var off = item.classList.toggle("legend-off");
+      item.setAttribute("aria-pressed", off ? "false" : "true");
+      section
+        .querySelectorAll('[data-series="' + key + '"].series-line, ' +
+                          '[data-series="' + key + '"].series-point')
+        .forEach(function (el) { el.classList.toggle("series-hidden", off); });
+    }
+
+    section.querySelectorAll(".legend-item").forEach(function (item) {
+      item.addEventListener("click", function () { toggle(item); });
+      item.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle(item);
+        }
+      });
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll(".cve-trend").forEach(initTrend);
+    });
+  } else {
+    document.querySelectorAll(".cve-trend").forEach(initTrend);
+  }
+})();
+</script></section><h3 id="cve-delta-vs-previous-scan" class="anchored-heading">CVE Delta vs Previous Scan<a class="heading-anchor" href="#cve-delta-vs-previous-scan" aria-label="Link to section">#</a></h3>
+<div class="scan-card">
+<div class="table-wrap"><details class="table-collapsible" open><summary><span class="toggle-label">Table (3 rows)</span></summary><table class="report-table">
+<thead><tr>
+<th>Metric</th>
+<th>Count</th>
+</tr></thead><tbody>
+<tr>
+<td>Previous scan CVEs</td>
+<td>65</td>
+</tr>
+<tr>
+<td>Current scan CVEs</td>
+<td>65</td>
+</tr>
+<tr>
+<td><strong>Delta</strong></td>
+<td><strong>+0</strong></td>
+</tr>
+</tbody></table></details></div>
+</div>
+<h3 id="scan-coverage" class="anchored-heading">Scan Coverage<a class="heading-anchor" href="#scan-coverage" aria-label="Link to section">#</a></h3>
+<div class="scan-card">
+<div class="table-wrap"><details class="table-collapsible" open><summary><span class="toggle-label">Table (1 rows)</span></summary><table class="report-table">
+<thead><tr>
+<th>Metric</th>
+<th>Count</th>
+</tr></thead><tbody>
+<tr>
+<td>Images scanned</td>
+<td>8</td>
+</tr>
+</tbody></table></details></div>
+</div>
+<h2 id="images-scanned" class="anchored-heading">Images Scanned<a class="heading-anchor" href="#images-scanned" aria-label="Link to section">#</a></h2>
+<ul class="images-list">
+<li><code>`docker.io/rancher/klipper-helm:v0.11.1-build20260615`</code></li>
+<li><code>`docker.io/rancher/klipper-lb:v0.4.17`</code></li>
+<li><code>`docker.io/rancher/local-path-provisioner:v0.0.36`</code></li>
+<li><code>`docker.io/rancher/mirrored-coredns-coredns:1.14.4`</code></li>
+<li><code>`docker.io/rancher/mirrored-library-busybox:1.37.0`</code></li>
+<li><code>`docker.io/rancher/mirrored-library-traefik:3.7.7`</code></li>
+<li><code>`docker.io/rancher/mirrored-metrics-server:v0.8.1`</code></li>
+<li><code>`docker.io/rancher/mirrored-pause:3.10.2`</code></li>
+</ul>
+<h2 id="k3s-binary" class="anchored-heading">K3s Binary<a class="heading-anchor" href="#k3s-binary" aria-label="Link to section">#</a></h2>
+<ul class="generic-list">
+<li><code>K3s Binary (branch &#x27;main&#x27;)</code></li>
+</ul>
+<h2 id="scan-results-docker-io-rancher-klipper-helm-v0-11-1-build20260615" class="anchored-heading">Scan Results: docker.io/rancher/klipper-helm:v0.11.1-build20260615<a class="heading-anchor" href="#scan-results-docker-io-rancher-klipper-helm-v0-11-1-build20260615" aria-label="Link to section">#</a></h2>
+<div class="scan-card"><div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">home/klipper-helm/.local/share/helm/plugins/helm-mapkubeapis/bin/mapkubeapis (gobinary)
+=======================================================================================
+Total: 2 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 2, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">CVE-2026-33814</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.49.0</td>
+<td>0.53.0</td>
+<td>net/http/internal/http2: golang: golang.org/x/net: Go<br>HTTP/2: Denial of Service via malformed<br>SETTINGS_MAX_FRAME_SIZE frame...<br><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-33814</a></td>
+</tr>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">CVE-2026-39821</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.49.0</td>
+<td>0.55.0</td>
+<td>golang.org/x/net/idna: golang: golang.org/x/net/idna:<br>Privilege escalation via incorrect Punycode label processing<br><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39821</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">home/klipper-helm/.local/share/helm/plugins/helm-set-status/helm-set-status (gobinary)
+======================================================================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">CVE-2026-33814</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.49.0</td>
+<td>0.53.0</td>
+<td>net/http/internal/http2: golang: golang.org/x/net: Go<br>HTTP/2: Denial of Service via malformed<br>SETTINGS_MAX_FRAME_SIZE frame...<br><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-33814</a></td>
+</tr>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">CVE-2026-39821</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.49.0</td>
+<td>0.55.0</td>
+<td>golang.org/x/net/idna: golang: golang.org/x/net/idna:<br>Privilege escalation via incorrect Punycode label processing<br><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39821</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.25.11</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/bin/helm (gobinary)
+=======================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">CVE-2026-33814</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.49.0</td>
+<td>0.53.0</td>
+<td>net/http/internal/http2: golang: golang.org/x/net: Go<br>HTTP/2: Denial of Service via malformed<br>SETTINGS_MAX_FRAME_SIZE frame...<br><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-33814</a></td>
+</tr>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">CVE-2026-39821</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.49.0</td>
+<td>0.55.0</td>
+<td>golang.org/x/net/idna: golang: golang.org/x/net/idna:<br>Privilege escalation via incorrect Punycode label processing<br><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39821</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.25.11</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+</tbody></table></details></div></div>
+<h2 id="scan-results-docker-io-rancher-klipper-lb-v0-4-17" class="anchored-heading">Scan Results: docker.io/rancher/klipper-lb:v0.4.17<a class="heading-anchor" href="#scan-results-docker-io-rancher-klipper-lb-v0-4-17" aria-label="Link to section">#</a></h2>
+<h2 id="scan-results-docker-io-rancher-local-path-provisioner-v0-0-36" class="anchored-heading">Scan Results: docker.io/rancher/local-path-provisioner:v0.0.36<a class="heading-anchor" href="#scan-results-docker-io-rancher-local-path-provisioner-v0-0-36" aria-label="Link to section">#</a></h2>
+<div class="scan-card"><div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">docker.io/rancher/local-path-provisioner:v0.0.36 (alpine 3.23.4)
+================================================================
+Total: 2 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 2, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>libcrypto3</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-45447" target="_blank" rel="noopener noreferrer">CVE-2026-45447</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>3.5.6-r0</td>
+<td>3.5.7-r0</td>
+<td>openssl: Heap Use-After-Free in OpenSSL PKCS7_verify()<br><a href="https://avd.aquasec.com/nvd/cve-2026-45447" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-45447</a></td>
+</tr>
+<tr>
+<td>libssl3</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-45447" target="_blank" rel="noopener noreferrer">CVE-2026-45447</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>3.5.6-r0</td>
+<td>3.5.7-r0</td>
+<td>openssl: Heap Use-After-Free in OpenSSL PKCS7_verify()<br><a href="https://avd.aquasec.com/nvd/cve-2026-45447" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-45447</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/bin/local-path-provisioner (gobinary)
+=========================================
+Total: 2 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 2, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">CVE-2026-33814</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.38.0</td>
+<td>0.53.0</td>
+<td>net/http/internal/http2: golang: golang.org/x/net: Go<br>HTTP/2: Denial of Service via malformed<br>SETTINGS_MAX_FRAME_SIZE frame...<br><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-33814</a></td>
+</tr>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">CVE-2026-39821</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.38.0</td>
+<td>0.55.0</td>
+<td>golang.org/x/net/idna: golang: golang.org/x/net/idna:<br>Privilege escalation via incorrect Punycode label processing<br><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39821</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/bin/go (gobinary)
+==============================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/bin/gofmt (gobinary)
+=================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/pkg/tool/linux_amd64/asm (gobinary)
+================================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/pkg/tool/linux_amd64/cgo (gobinary)
+================================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/pkg/tool/linux_amd64/compile (gobinary)
+====================================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/pkg/tool/linux_amd64/cover (gobinary)
+==================================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/pkg/tool/linux_amd64/fix (gobinary)
+================================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/pkg/tool/linux_amd64/link (gobinary)
+=================================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/pkg/tool/linux_amd64/preprofile (gobinary)
+=======================================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div>
+<div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">usr/local/go/pkg/tool/linux_amd64/vet (gobinary)
+================================================
+Total: 3 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 3, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">CVE-2026-39822</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.12, 1.26.5, 1.27.0-rc.2</td>
+<td>os: golang: Go os.Root: Symlink following vulnerability<br>allows directory traversal<br><a href="https://avd.aquasec.com/nvd/cve-2026-39822" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39822</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.26.3</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div></div>
+<h2 id="scan-results-docker-io-rancher-mirrored-coredns-coredns-1-14-4" class="anchored-heading">Scan Results: docker.io/rancher/mirrored-coredns-coredns:1.14.4<a class="heading-anchor" href="#scan-results-docker-io-rancher-mirrored-coredns-coredns-1-14-4" aria-label="Link to section">#</a></h2>
+<div class="scan-card"><div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">coredns (gobinary)
+==================
+Total: 9 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 9, CRITICAL: 0)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>github.com/coredns/coredns</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2023-28452" target="_blank" rel="noopener noreferrer">CVE-2023-28452</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.0.0-20260609032251-232d7cac38fb</td>
+<td>1.11.0</td>
+<td>CoreDNS vulnerable to TuDoor Attacks<br><a href="https://avd.aquasec.com/nvd/cve-2023-28452" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2023-28452</a></td>
+</tr>
+<tr>
+<td>github.com/coredns/coredns</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2025-47950" target="_blank" rel="noopener noreferrer">CVE-2025-47950</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.0.0-20260609032251-232d7cac38fb</td>
+<td>1.12.2</td>
+<td>coredns: CoreDNS Vulnerable to DoQ Memory Exhaustion via<br>Stream Amplification<br><a href="https://avd.aquasec.com/nvd/cve-2025-47950" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2025-47950</a></td>
+</tr>
+<tr>
+<td>github.com/coredns/coredns</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-26017" target="_blank" rel="noopener noreferrer">CVE-2026-26017</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.0.0-20260609032251-232d7cac38fb</td>
+<td>1.14.2</td>
+<td>github.com/coredns/coredns: CoreDNS: DNS access control<br>bypass due to plugin execution order flaw...<br><a href="https://avd.aquasec.com/nvd/cve-2026-26017" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-26017</a></td>
+</tr>
+<tr>
+<td>github.com/coredns/coredns</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-26018" target="_blank" rel="noopener noreferrer">CVE-2026-26018</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.0.0-20260609032251-232d7cac38fb</td>
+<td>1.14.2</td>
+<td>github.com/coredns/coredns: CoreDNS: Denial of Service<br>vulnerability due to predictable pseudo-random number<br>generation...<br><a href="https://avd.aquasec.com/nvd/cve-2026-26018" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-26018</a></td>
+</tr>
+<tr>
+<td>github.com/coredns/coredns</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-32934" target="_blank" rel="noopener noreferrer">CVE-2026-32934</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.0.0-20260609032251-232d7cac38fb</td>
+<td>1.14.3</td>
+<td>coredns: github.com/coredns/coredns: CoreDNS: Denial of<br>Service due to unbounded resource growth in...<br><a href="https://avd.aquasec.com/nvd/cve-2026-32934" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-32934</a></td>
+</tr>
+<tr>
+<td>github.com/coredns/coredns</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-32936" target="_blank" rel="noopener noreferrer">CVE-2026-32936</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.0.0-20260609032251-232d7cac38fb</td>
+<td>1.14.3</td>
+<td>github.com/coredns/coredns: CoreDNS: Denial of Service via<br>oversized DNS-over-HTTPS GET requests<br><a href="https://avd.aquasec.com/nvd/cve-2026-32936" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-32936</a></td>
+</tr>
+<tr>
+<td>github.com/coredns/coredns</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-33190" target="_blank" rel="noopener noreferrer">CVE-2026-33190</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.0.0-20260609032251-232d7cac38fb</td>
+<td>1.14.3</td>
+<td>github.com/coredns/coredns: CoreDNS: Authentication bypass<br>via flawed TSIG plugin verification on non-plain-DNS<br>transports...<br><a href="https://avd.aquasec.com/nvd/cve-2026-33190" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-33190</a></td>
+</tr>
+<tr>
+<td>github.com/coredns/coredns</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-33489" target="_blank" rel="noopener noreferrer">CVE-2026-33489</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.0.0-20260609032251-232d7cac38fb</td>
+<td>1.14.3</td>
+<td>CoreDNS: github.com/coredns/coredns: CoreDNS: Information<br>disclosure via incorrect ACL stanza selection in transfer...<br><a href="https://avd.aquasec.com/nvd/cve-2026-33489" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-33489</a></td>
+</tr>
+<tr>
+<td>github.com/coredns/coredns</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-35579" target="_blank" rel="noopener noreferrer">CVE-2026-35579</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.0.0-20260609032251-232d7cac38fb</td>
+<td>1.14.3</td>
+<td>github.com/coredns/coredns: CoreDNS: Authentication bypass<br>allows unauthorized access to TSIG-protected functionalities<br><a href="https://avd.aquasec.com/nvd/cve-2026-35579" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-35579</a></td>
+</tr>
+</tbody></table></details></div></div>
+<h2 id="scan-results-docker-io-rancher-mirrored-library-busybox-1-37-0" class="anchored-heading">Scan Results: docker.io/rancher/mirrored-library-busybox:1.37.0<a class="heading-anchor" href="#scan-results-docker-io-rancher-mirrored-library-busybox-1-37-0" aria-label="Link to section">#</a></h2>
+<h2 id="scan-results-docker-io-rancher-mirrored-library-traefik-3-7-7" class="anchored-heading">Scan Results: docker.io/rancher/mirrored-library-traefik:3.7.7<a class="heading-anchor" href="#scan-results-docker-io-rancher-mirrored-library-traefik-3-7-7" aria-label="Link to section">#</a></h2>
+<h2 id="scan-results-docker-io-rancher-mirrored-metrics-server-v0-8-1" class="anchored-heading">Scan Results: docker.io/rancher/mirrored-metrics-server:v0.8.1<a class="heading-anchor" href="#scan-results-docker-io-rancher-mirrored-metrics-server-v0-8-1" aria-label="Link to section">#</a></h2>
+<div class="scan-card"><div class="table-wrap"><details class="table-collapsible scan-collapsible" open><summary class="scan-summary"><span class="toggle-label" aria-hidden="true"></span><pre class="raw-output">metrics-server (gobinary)
+=========================
+Total: 14 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 13, CRITICAL: 1)</pre></summary><table class="report-table">
+<thead><tr>
+<th>Library</th>
+<th>Vulnerability</th>
+<th>Severity</th>
+<th>Status</th>
+<th>Installed Version</th>
+<th>Fixed Version</th>
+<th>Title</th>
+</tr></thead><tbody>
+<tr>
+<td>github.com/prometheus/prometheus</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42151" target="_blank" rel="noopener noreferrer">CVE-2026-42151</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.304.2</td>
+<td>0.311.3</td>
+<td>github.com/prometheus/prometheus: Prometheus: Information<br>disclosure of Azure OAuth client secret via config API...<br><a href="https://avd.aquasec.com/nvd/cve-2026-42151" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42151</a></td>
+</tr>
+<tr>
+<td>github.com/prometheus/prometheus</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42154" target="_blank" rel="noopener noreferrer">CVE-2026-42154</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.304.2</td>
+<td>0.311.3, 0.305.2</td>
+<td>github.com/prometheus/prometheus: Prometheus: Denial of<br>Service via uncontrolled memory allocation in remote read...<br><a href="https://avd.aquasec.com/nvd/cve-2026-42154" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42154</a></td>
+</tr>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">CVE-2026-33814</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.40.0</td>
+<td>0.53.0</td>
+<td>net/http/internal/http2: golang: golang.org/x/net: Go<br>HTTP/2: Denial of Service via malformed<br>SETTINGS_MAX_FRAME_SIZE frame...<br><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-33814</a></td>
+</tr>
+<tr>
+<td>golang.org/x/net</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">CVE-2026-39821</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v0.40.0</td>
+<td>0.55.0</td>
+<td>golang.org/x/net/idna: golang: golang.org/x/net/idna:<br>Privilege escalation via incorrect Punycode label processing<br><a href="https://avd.aquasec.com/nvd/cve-2026-39821" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39821</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2025-68121" target="_blank" rel="noopener noreferrer">CVE-2025-68121</a></td>
+<td><span class="sev sev-CRITICAL">CRITICAL</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.24.13, 1.25.7, 1.26.0-rc.3</td>
+<td>crypto/tls: crypto/tls: Incorrect certificate validation<br>during TLS session resumption<br><a href="https://avd.aquasec.com/nvd/cve-2025-68121" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2025-68121</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-25679" target="_blank" rel="noopener noreferrer">CVE-2026-25679</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.25.8, 1.26.1</td>
+<td>net/url: Incorrect parsing of IPv6 host literals in net/url<br><a href="https://avd.aquasec.com/nvd/cve-2026-25679" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-25679</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">CVE-2026-27145</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.25.11, 1.26.4</td>
+<td>crypto/x509: golang: golang crypto/x509: Denial of Service<br>via excessive processing of DNS...<br><a href="https://avd.aquasec.com/nvd/cve-2026-27145" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-27145</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-32280" target="_blank" rel="noopener noreferrer">CVE-2026-32280</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.25.9, 1.26.2</td>
+<td>crypto/x509: crypto/tls: golang: Go: Denial of Service<br>vulnerability in certificate chain building...<br><a href="https://avd.aquasec.com/nvd/cve-2026-32280" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-32280</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-32281" target="_blank" rel="noopener noreferrer">CVE-2026-32281</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.25.9, 1.26.2</td>
+<td>crypto/x509: golang: Go crypto/x509: Denial of Service via<br>inefficient certificate chain validation...<br><a href="https://avd.aquasec.com/nvd/cve-2026-32281" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-32281</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-32283" target="_blank" rel="noopener noreferrer">CVE-2026-32283</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.25.9, 1.26.2</td>
+<td>crypto/tls: golang: Go crypto/tls: Denial of Service via<br>multiple TLS 1.3 key...<br><a href="https://avd.aquasec.com/nvd/cve-2026-32283" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-32283</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">CVE-2026-33814</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.25.10, 1.26.3</td>
+<td>net/http/internal/http2: golang: golang.org/x/net: Go<br>HTTP/2: Denial of Service via malformed<br>SETTINGS_MAX_FRAME_SIZE frame...<br><a href="https://avd.aquasec.com/nvd/cve-2026-33814" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-33814</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-39820" target="_blank" rel="noopener noreferrer">CVE-2026-39820</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.25.10, 1.26.3</td>
+<td>net/mail: golang: Go net/mail: Denial of Service via crafted<br>email inputs<br><a href="https://avd.aquasec.com/nvd/cve-2026-39820" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-39820</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42499" target="_blank" rel="noopener noreferrer">CVE-2026-42499</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.25.10, 1.26.3</td>
+<td>net/mail: golang: net/mail: Denial of Service via<br>pathological email address parsing<br><a href="https://avd.aquasec.com/nvd/cve-2026-42499" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42499</a></td>
+</tr>
+<tr>
+<td>stdlib</td>
+<td><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">CVE-2026-42504</a></td>
+<td><span class="sev sev-HIGH">HIGH</span></td>
+<td>fixed</td>
+<td>v1.24.12</td>
+<td>1.25.11, 1.26.4</td>
+<td>mime: golang: Golang MIME: Denial of Service via<br>maliciously-crafted MIME header<br><a href="https://avd.aquasec.com/nvd/cve-2026-42504" target="_blank" rel="noopener noreferrer">https://avd.aquasec.com/nvd/cve-2026-42504</a></td>
+</tr>
+</tbody></table></details></div></div>
+<h2 id="scan-results-docker-io-rancher-mirrored-pause-3-10-2" class="anchored-heading">Scan Results: docker.io/rancher/mirrored-pause:3.10.2<a class="heading-anchor" href="#scan-results-docker-io-rancher-mirrored-pause-3-10-2" aria-label="Link to section">#</a></h2>
+<h2 id="scan-results-k3s-binary-branch-main" class="anchored-heading">Scan Results: K3s Binary (branch &#x27;main&#x27;)<a class="heading-anchor" href="#scan-results-k3s-binary-branch-main" aria-label="Link to section">#</a></h2>
+    <div class="page-footer">
+      Generated from <code>scan-20260715-1.md</code> &nbsp;·&nbsp; 2026-07-15 06:52 UTC
+    </div>
+  </main>
+</body>
+</html>
